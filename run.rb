@@ -10,7 +10,7 @@ end
 
 
 class Board
-  attr_accessor :direction
+  attr_accessor :direction, :data
   DIMENSIONS = 10
 
   def initialize
@@ -80,7 +80,9 @@ class Board
       @data[next_head.row][next_head.col].prev = @data[@head.row][@head.col]
 
       @head = next_head
-      if piece_type != :block
+      if piece_type == :block
+        self.place_new_block
+      else
         self.remove_tail
       end
     end
@@ -98,6 +100,11 @@ class Board
     parent.prev = nil
     node.next = nil
     node.type = :unassigned
+  end
+
+  def place_new_block
+    next_block = @data.flatten.select { |square| square.type == :unassigned }.sample
+    next_block.type = :block
   end
 end
 
