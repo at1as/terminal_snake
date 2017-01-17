@@ -1,3 +1,5 @@
+require 'timeout'
+
 class Node
   attr_accessor :prev, :next, :type
 
@@ -68,10 +70,13 @@ class Board
     
     if next_head.row < 0 || next_head.row > (DIMENSIONS - 1)
       puts "you hit the wall, you lose!"
+      exit
     elsif next_head.col < 0 || next_head.col > (DIMENSIONS - 1)
       puts "you hit the side wall, you lose!"
+      exit
     elsif @data[next_head.row][next_head.col].type == :snake
       puts "you hit yourself, you lose!"
+      exit
     else
       piece_type = "#{@data[next_head.row][next_head.col].type}".to_sym
       @data[next_head.row][next_head.col].type = :snake
@@ -110,22 +115,33 @@ end
 
 
 class Runner
+  DIRECTIONS = {:w => :up, :a => :left, :s => :down, :d => :right}
 
   def initialize
   end
 
   def start
     board = Board.new
+    prev_dir = [:up, :down, :left, :right].sample
+    board.direction = prev_dir
+
+    puts "To play, use 'w', 'a', 's', 'd' keys to select direction and press Enter after changing directions"
 
     loop do
       board.print_board
 
       puts "Move in which direction?"
-      dir = gets.chomp.to_sym
 
-      next unless [:up, :down, :left, :right].include? dir
+      begin
+        dir = Timeout::timeout(1) { gets.chomp.to_sym }
+      rescue
+        dir = prev_dir
+      end
 
-      board.direction = dir
+      next unless [:up, :down, :left, :right].include? DIRECTIONS[dir]
+      prev_dir = dir
+
+      board.direction = DIRECTIONS[dir]
       board.next_snake
     end
   
