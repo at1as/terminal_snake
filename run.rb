@@ -12,18 +12,19 @@ end
 
 
 class Board
-  attr_accessor :direction, :data
-  DIMENSIONS = 10
+  attr_accessor :direction
+  
+  SIZE = 10
+  CLEAR_TERM = "\e[H\e[2J"
 
   def initialize
-    @data = Array.new(DIMENSIONS) do
-      Array.new(DIMENSIONS) do
+    @data = Array.new(SIZE) do
+      Array.new(SIZE) do
         Node.new(nil, nil, :unassigned)
       end
     end
     @direction = :up
     @head = nil
-    @next_block = nil 
 
     start_snake
   end
@@ -37,11 +38,11 @@ class Board
     @data[start_x][start_y].type = :snake
     @head = coords.new(4, 4)
     
-    @next_block = coords.new(3, 5)
-    @data[3][5].type = :block
+    place_new_block
   end
 
   def print_board
+    puts CLEAR_TERM
     @data.each do |row|
       row.each do |col|
         if (val = col.type) == :snake
@@ -58,24 +59,24 @@ class Board
   end
 
   def next_snake
-    if self.direction == :up
+    if @direction == :up
       next_head = coords.new(@head.row - 1, @head.col)
-    elsif self.direction == :down
+    elsif @direction == :down
       next_head = coords.new(@head.row + 1, @head.col)
-    elsif self.direction == :left
+    elsif @direction == :left
       next_head = coords.new(@head.row, @head.col - 1)
-    elsif self.direction == :right
+    elsif @direction == :right
       next_head = coords.new(@head.row, @head.col + 1)
     end
     
-    if next_head.row < 0 || next_head.row > (DIMENSIONS - 1)
-      puts "you hit the wall, you lose!"
+    if next_head.row < 0 || next_head.row > (SIZE - 1)
+      puts "You hit the wall, you lose!\n"
       exit
-    elsif next_head.col < 0 || next_head.col > (DIMENSIONS - 1)
-      puts "you hit the side wall, you lose!"
+    elsif next_head.col < 0 || next_head.col > (SIZE - 1)
+      puts "You hit the side wall, you lose!\n"
       exit
     elsif @data[next_head.row][next_head.col].type == :snake
-      puts "you hit yourself, you lose!"
+      puts "You hit yourself, you lose!\n"
       exit
     else
       piece_type = "#{@data[next_head.row][next_head.col].type}".to_sym
@@ -86,9 +87,9 @@ class Board
 
       @head = next_head
       if piece_type == :block
-        self.place_new_block
+        place_new_block
       else
-        self.remove_tail
+        remove_tail
       end
     end
   end
@@ -117,20 +118,19 @@ end
 class Runner
   DIRECTIONS = {:w => :up, :a => :left, :s => :down, :d => :right}
 
-  def initialize
-  end
-
-  def start
+  def self.start
     board = Board.new
-    prev_dir = [:up, :down, :left, :right].sample
+    prev_dir = DIRECTIONS.keys.sample
     board.direction = prev_dir
 
-    puts "To play, use 'w', 'a', 's', 'd' keys to select direction and press Enter after changing directions"
+    puts "To play, use 'w', 'a', 's', 'd' keys to select direction and then press Enter after changing directions"
+    puts "Press Enter to continue..."
+    gets
 
     loop do
       board.print_board
 
-      puts "Move in which direction?"
+      puts "Move in which direction? (w/a/s/d)"
 
       begin
         dir = Timeout::timeout(1) { gets.chomp.to_sym }
@@ -148,5 +148,5 @@ class Runner
   end
 end
 
-Runner.new.start
+Runner.start
 
