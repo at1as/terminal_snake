@@ -1,4 +1,12 @@
+require 'io/wait'
 require 'timeout'
+
+
+Signal.trap("INT") do
+  # Catch sigint from Ctrl-C (needed for `stty raw -echo` below)
+  exit
+end
+
 
 class Node
   attr_accessor :prev, :next, :type
@@ -116,7 +124,28 @@ end
 
 
 class Runner
+  GAME_SPEED = 1 # refresh rate in seconds
   DIRECTIONS = {:w => :up, :a => :left, :s => :down, :d => :right}
+
+  def self.clear_stdin
+    # Clear STD buffer
+    $stdin.getc while $stdin.ready?
+  end
+
+  def self.char_if_pressed
+    begin
+      system("stty raw -echo") # turn raw input on
+      c = nil
+      if $stdin.ready?
+        c = $stdin.getc
+        self.clear_stdin
+      end
+      c.chr if c
+    ensure
+      system "stty -raw echo" # turn raw input off
+    end
+  end
+
 
   def self.start
     board = Board.new
@@ -132,11 +161,10 @@ class Runner
 
       puts "Move in which direction? (w/a/s/d)"
 
-      begin
-        dir = Timeout::timeout(1) { gets.chomp.to_sym }
-      rescue
-        dir = prev_dir
-      end
+      sleep GAME_SPEED
+
+      dir = self.char_if_pressed || prev_dir
+      dir = dir.to_sym if dir
 
       next unless [:up, :down, :left, :right].include? DIRECTIONS[dir]
       prev_dir = dir
